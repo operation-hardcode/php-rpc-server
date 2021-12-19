@@ -18,7 +18,7 @@ final class RpcRequest
 
     public function isNotification(): bool
     {
-        return $this->id !== null;
+        return $this->id === null;
     }
 
     /**
