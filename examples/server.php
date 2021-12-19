@@ -30,6 +30,6 @@ $handler->add('posts.get', function (RpcRequest $request, ?RpcResponse $response
 
 $server = new RpcServer($handler);
 
-$response = $server->process('[{"jsonrpc": "2.0", "method": "messages.get", "id": 1},{"jsonrpc": "2.0", "method": "messages.get1", "id": 2}]');
+$response = $server->process('[{"jsonrpc": "2.0", "method": "messages.get", "id": null},{"jsonrpc": "2.0", "method": "messages.get1", "id": 2}]');
 
 echo json_encode($response?->toArray(), JSON_UNESCAPED_SLASHES) . \PHP_EOL;

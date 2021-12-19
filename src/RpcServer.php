@@ -54,6 +54,7 @@ final class RpcServer
             $response = $this->handleBatch($payload);
 
             if ($response->isEmpty()) {
+                // All requests were notifications.
                 return null;
             }
 
@@ -91,6 +92,13 @@ final class RpcServer
                 /** @psalm-var ValidJSONRPC $payloadItem */
                 $responses[] = $this->rpcHandler->handle(RpcRequest::parse($payloadItem), RpcResponse::prepare($payloadItem['id']));
             }
+
+            $this->logger->debug(
+                'The '.(isset($payloadItem['id']) ? "request with id \"{$payloadItem['id']}\" " : 'notification ').'for method "{method}" was handled successful.',
+                [
+                    'method' => $payloadItem['method']
+                ]
+            );
         }
 
         return new BatchResponse($responses);

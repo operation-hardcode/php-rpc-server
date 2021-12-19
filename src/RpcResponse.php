@@ -40,14 +40,6 @@ final class RpcResponse
         return $response;
     }
 
-    /**
-     * @param RpcResponse[] $responses
-     */
-    public static function merge(array $responses): RpcResponse
-    {
-        return new RpcResponse();
-    }
-
     public static function parseError(): RpcResponse
     {
         return self::withError(ErrorCode::PARSE_ERROR);
