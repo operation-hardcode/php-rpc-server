@@ -96,19 +96,36 @@ final class RpcServer
     private function once(array $payload): ?RpcResponse
     {
         if (!$this->validator->validate($payload)) {
-            return RpcResponse::invalidRequest($payload['id'] ?? null);
+            $response = RpcResponse::invalidRequest($payload['id'] ?? null);
+
+            $this->logger->error('The '.(isset($payload['id']) ? "request with id \"{$payload['id']}\" and " : 'notification ').'with params "{params}" for method "{method}" was failed with error code "{code}" and message "{message}".', [
+                'method' => $payload['method'] ?? '',
+                'params' => json_encode($payload['params'] ?? []),
+                'code' => $response->errorCode(),
+                'message' => $response->errorMessage(),
+            ]);
+
+            return $response;
         }
 
-        $this->logger->debug(
-            'The '.(isset($payload['id']) ? "request with id \"{$payload['id']}\" " : 'notification ').'for method "{method}" was handled successful.',
-            [
-                'method' => $payload['method']
-            ]
+        $request = RpcRequest::parse($payload);
+
+        $response = $this->rpcHandler->handle(
+            $request,
+            !$request->isNotification() ? RpcResponse::prepare($payload['id']) : null
         );
 
-        return $this->rpcHandler->handle(
-            RpcRequest::parse($payload),
-            array_key_exists('id', $payload) ? RpcResponse::prepare($payload['id']) : null,
-        );
+        if ($response?->isErroneous() === true) {
+            $this->logger->error('The '.(isset($payload['id']) ? "request with id \"{$payload['id']}\" and " : 'notification ').'with params "{params}" for method "{method}" was failed with error code "{code}", message "{message}" and exception "{exception}".', [
+                'method' => $payload['method'],
+                'params' => json_encode($payload['params'] ?? []),
+                'code' => $response?->errorCode(),
+                'message' => $response?->errorMessage(),
+                'exception' => $response->exception()?->getMessage(),
+                'trace' => $response->exception(),
+            ]);
+        }
+
+        return $response;
     }
 }

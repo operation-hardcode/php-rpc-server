@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace OperationHardcode\PhpRpcServer;
 
-use JetBrains\PhpStorm\Internal\TentativeType;
 use OperationHardcode\PhpRpcServer\Protocol\ErrorCode;
 use OperationHardcode\PhpRpcServer\Protocol\Version;
 
@@ -16,6 +15,26 @@ final class RpcResponse implements \JsonSerializable
 
     public function __construct(private array $response = [])
     {
+    }
+
+    public function isErroneous(): bool
+    {
+        return $this->errorCode !== null;
+    }
+
+    public function exception(): ?\Throwable
+    {
+        return $this->exception;
+    }
+
+    public function errorCode(): ?int
+    {
+        return $this->errorCode;
+    }
+
+    public function errorMessage(): ?string
+    {
+        return $this->errorMessage;
     }
 
     public static function prepare(string|int|null $id = null): RpcResponse
