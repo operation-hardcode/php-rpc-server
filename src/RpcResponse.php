@@ -37,9 +37,9 @@ final class RpcResponse implements \JsonSerializable
         return $this->errorMessage;
     }
 
-    public static function prepare(string|int|null $id = null): RpcResponse
+    public static function prepare(RpcRequest $request): RpcResponse
     {
-        return new RpcResponse(['jsonrpc' => Version::TWO->value, 'result' => null, 'id' => $id]);
+        return new RpcResponse(['jsonrpc' => Version::TWO->value, 'result' => null, 'id' => $request->id]);
     }
 
     public function addResult(mixed $result): RpcResponse
@@ -47,6 +47,7 @@ final class RpcResponse implements \JsonSerializable
         $response = clone $this;
 
         $response->response['result'] = $result;
+        unset($response->response['error']);
 
         return $response;
     }
@@ -62,6 +63,7 @@ final class RpcResponse implements \JsonSerializable
             'message' => $message,
             'data' => $data,
         ]);
+        unset($response->response['result']);
 
         return $response;
     }
@@ -89,6 +91,26 @@ final class RpcResponse implements \JsonSerializable
         $idForResponse = (is_int($id) || is_string($id) || is_null($id)) ? $id : null;
 
         return self::withError(ErrorCode::INVALID_REQUEST, $idForResponse);
+    }
+
+    public static function invalidParams(string|int|null $id = null, string|array|int|bool $errors = null): RpcResponse
+    {
+        $errorCode = ErrorCode::INVALID_PARAMS;
+
+        $error = [
+            'code' => $errorCode->value,
+            'message' => $errorCode->interpret(),
+        ];
+
+        if (!\is_null($errors)) {
+            $error['data'] = $errors;
+        }
+
+        return new RpcResponse([
+            'jsonrpc' => Version::TWO->value,
+            'error' => $error,
+            'id' => $id,
+        ]);
     }
 
     private static function withError(ErrorCode $errorCode, string|int|null $id = null): RpcResponse

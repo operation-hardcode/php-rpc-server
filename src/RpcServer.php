@@ -36,9 +36,9 @@ final class RpcServer
      * @psalm-param array<string, callable(RpcRequest, ?RpcResponse): ?RpcResponse> $methodsHandlers
      * @psalm-param ValidateRequest[] $validators
      */
-    public static function new(array $methodsHandlers, LoggerInterface $logger = new NullLogger(), array $validators = []): RpcServer
+    public static function new(array $methodsHandlers, ?LoggerInterface $logger = null, array $validators = []): RpcServer
     {
-        return new RpcServer(new InvokableRpcHandler($methodsHandlers), $logger, $validators);
+        return new RpcServer(new InvokableRpcHandler($methodsHandlers), $logger ?: new NullLogger(), $validators);
     }
 
     public function process(?string $json = null): ?RpcResponse
@@ -112,15 +112,15 @@ final class RpcServer
 
         $response = $this->rpcHandler->handle(
             $request,
-            !$request->isNotification() ? RpcResponse::prepare($payload['id']) : null
+            !$request->isNotification() ? RpcResponse::prepare($request) : null
         );
 
         if ($response?->isErroneous() === true) {
             $this->logger->error('The '.(isset($payload['id']) ? "request with id \"{$payload['id']}\" and " : 'notification ').'with params "{params}" for method "{method}" was failed with error code "{code}", message "{message}" and exception "{exception}".', [
                 'method' => $payload['method'],
                 'params' => json_encode($payload['params'] ?? []),
-                'code' => $response?->errorCode(),
-                'message' => $response?->errorMessage(),
+                'code' => $response->errorCode(),
+                'message' => $response->errorMessage(),
                 'exception' => $response->exception()?->getMessage(),
                 'trace' => $response->exception(),
             ]);
