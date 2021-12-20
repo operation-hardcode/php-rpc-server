@@ -21,19 +21,24 @@ final class RpcServer
 {
     private ValidateRequest $validator;
 
+    /**
+     * @param ValidateRequest[] $validators
+     */
     public function __construct(
         private RpcHandler $rpcHandler,
         private LoggerInterface $logger = new NullLogger(),
+        array $validators = []
     ) {
-        $this->validator = new RequestValidator(new ValidateVersion(), new ValidateMethod(), new ValidateId());
+        $this->validator = new RequestValidator(new ValidateVersion(), new ValidateMethod(), new ValidateId(), ...$validators);
     }
 
     /**
      * @psalm-param array<string, callable(RpcRequest, ?RpcResponse): ?RpcResponse> $methodsHandlers
+     * @psalm-param ValidateRequest[] $validators
      */
-    public static function new(array $methodsHandlers, LoggerInterface $logger = new NullLogger()): RpcServer
+    public static function new(array $methodsHandlers, LoggerInterface $logger = new NullLogger(), array $validators = []): RpcServer
     {
-        return new RpcServer(new InvokableRpcHandler($methodsHandlers), $logger);
+        return new RpcServer(new InvokableRpcHandler($methodsHandlers), $logger, $validators);
     }
 
     public function process(?string $json = null): ?RpcResponse
@@ -62,15 +67,7 @@ final class RpcServer
         }
 
         /** @psalm-var JSONRPC $payload */
-        if (!$this->validator->validate($payload)) {
-            return RpcResponse::invalidRequest($payload['id'] ?? null);
-        }
-
-        /** @psalm-var ValidJSONRPC $payload */
-        return $this->rpcHandler->handle(
-            RpcRequest::parse($payload),
-            isset($payload['id']) ? RpcResponse::prepare($payload['id'] ?? null) : null,
-        );
+        return $this->once($payload);
     }
 
     /**
@@ -83,24 +80,35 @@ final class RpcServer
         $responses = [];
 
         foreach ($payload as $payloadItem) {
-            if (!$this->validator->validate($payloadItem)) {
-                $responses[] = RpcResponse::invalidRequest($payloadItem['id'] ?? null);
-            } elseif (!isset($payloadItem['id'])) {
-                /** @psalm-var ValidJSONRPC $payloadItem */
-                $this->rpcHandler->handle(RpcRequest::parse($payloadItem));
-            } else {
-                /** @psalm-var ValidJSONRPC $payloadItem */
-                $responses[] = $this->rpcHandler->handle(RpcRequest::parse($payloadItem), RpcResponse::prepare($payloadItem['id']));
-            }
+            $response = $this->once($payloadItem);
 
-            $this->logger->debug(
-                'The '.(isset($payloadItem['id']) ? "request with id \"{$payloadItem['id']}\" " : 'notification ').'for method "{method}" was handled successful.',
-                [
-                    'method' => $payloadItem['method']
-                ]
-            );
+            if (!\is_null($response)) {
+                $responses[] = $response;
+            }
         }
 
         return new BatchResponse($responses);
+    }
+
+    /**
+     * @param JSONRPC $payload
+     */
+    private function once(array $payload): ?RpcResponse
+    {
+        if (!$this->validator->validate($payload)) {
+            return RpcResponse::invalidRequest($payload['id'] ?? null);
+        }
+
+        $this->logger->debug(
+            'The '.(isset($payload['id']) ? "request with id \"{$payload['id']}\" " : 'notification ').'for method "{method}" was handled successful.',
+            [
+                'method' => $payload['method']
+            ]
+        );
+
+        return $this->rpcHandler->handle(
+            RpcRequest::parse($payload),
+            array_key_exists('id', $payload) ? RpcResponse::prepare($payload['id']) : null,
+        );
     }
 }

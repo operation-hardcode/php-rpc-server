@@ -16,7 +16,11 @@ final class InvokableRpcHandler implements MutableRpcHandler
     public function handle(RpcRequest $request, ?RpcResponse $response = null): ?RpcResponse
     {
         if (isset($this->methodsHandlers[$request->method])) {
-            return $this->methodsHandlers[$request->method]($request, $response);
+            try {
+                return $this->methodsHandlers[$request->method]($request, $response);
+            } catch (\Throwable $e) {
+                return RpcResponse::internalError($request->id, $e);
+            }
         }
 
         return RpcResponse::methodNotFound($request->id);
