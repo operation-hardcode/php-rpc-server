@@ -14,7 +14,7 @@ use Psr\Log\NullLogger;
 
 /**
  * @psalm-type JSONRPC = array{jsonrpc?: string, method?: string, params?: array|string|int|bool, id?: string|int}
- * @psalm-type BATCH = array<int, JSONRPC>
+ * @psalm-type BATCH = array<int, JSONRPC|string|bool|int|float|null>
  * @psalm-type ValidJSONRPC = array{jsonrpc: string, method: string, params?: array|string|int|bool, id?: string|int}
  */
 final class RpcServer
@@ -54,7 +54,11 @@ final class RpcServer
             return RpcResponse::parseError();
         }
 
-        if (isset($payload[0])) {
+        if (empty($payload)) {
+            return RpcResponse::invalidRequest();
+        }
+
+        if (array_is_list($payload)) {
             /** @psalm-var BATCH $payload */
             $response = $this->handleBatch($payload);
 
@@ -91,10 +95,14 @@ final class RpcServer
     }
 
     /**
-     * @param JSONRPC $payload
+     * @param JSONRPC|string|int|bool|float|null $payload
      */
-    private function once(array $payload): ?RpcResponse
+    private function once(array|string|int|bool|float|null $payload = null): ?RpcResponse
     {
+        if (!\is_array($payload)) {
+            return RpcResponse::invalidRequest();
+        }
+
         if (!$this->validator->validate($payload)) {
             $response = RpcResponse::invalidRequest($payload['id'] ?? null);
 

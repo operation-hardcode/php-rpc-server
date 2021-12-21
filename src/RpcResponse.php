@@ -42,7 +42,7 @@ final class RpcResponse implements \JsonSerializable
         return new RpcResponse(['jsonrpc' => Version::TWO->value, 'result' => null, 'id' => $request->id]);
     }
 
-    public function addResult(mixed $result): RpcResponse
+    public function addResult(string|array|\Stringable|bool|int|float|null $result): RpcResponse
     {
         $response = clone $this;
 
@@ -52,7 +52,7 @@ final class RpcResponse implements \JsonSerializable
         return $response;
     }
 
-    public function addError(int $code, string $message, mixed $data = null): RpcResponse
+    public function addError(int $code, string $message, string|array|\Stringable|bool|int|float|null $data = null): RpcResponse
     {
         $response = clone $this;
 
@@ -62,7 +62,7 @@ final class RpcResponse implements \JsonSerializable
             'code' => $code,
             'message' => $message,
             'data' => $data,
-        ]);
+        ], fn(string|int|array|bool|float|null $value): bool => !\is_null($value));
         unset($response->response['result']);
 
         return $response;
@@ -86,7 +86,7 @@ final class RpcResponse implements \JsonSerializable
         return self::withError(ErrorCode::METHOD_NOT_FOUND, $id);
     }
 
-    public static function invalidRequest(mixed $id = null): RpcResponse
+    public static function invalidRequest(string|int|bool|array|float $id = null): RpcResponse
     {
         $idForResponse = (is_int($id) || is_string($id) || is_null($id)) ? $id : null;
 

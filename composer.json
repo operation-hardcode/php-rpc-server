@@ -33,5 +33,9 @@
             "email": "vadimzanfir@gmail.com"
         }
     ],
-    "minimum-stability": "stable"
+    "minimum-stability": "stable",
+    "scripts": {
+        "test": "vendor/bin/phpunit --do-not-cache",
+        "lint": "vendor/bin/psalm --no-cache"
+    }
 }

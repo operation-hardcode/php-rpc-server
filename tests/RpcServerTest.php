@@ -344,6 +344,121 @@ final class RpcServerTest extends TestCase
             $response->toArray()
         );
     }
+
+    public function testAllRequestsInBatchFails(): void
+    {
+        $server = RpcServer::new([]);
+
+        $response = $server->process('[1, 2, 3]');
+
+        self::assertEquals(
+            [
+                [
+                    'jsonrpc' => Version::TWO->value,
+                    'error' => [
+                        'code' => ErrorCode::INVALID_REQUEST->value,
+                        'message' => ErrorCode::INVALID_REQUEST->interpret(),
+                    ],
+                    'id' => null,
+                ],
+                [
+                    'jsonrpc' => Version::TWO->value,
+                    'error' => [
+                        'code' => ErrorCode::INVALID_REQUEST->value,
+                        'message' => ErrorCode::INVALID_REQUEST->interpret(),
+                    ],
+                    'id' => null,
+                ],
+                [
+                    'jsonrpc' => Version::TWO->value,
+                    'error' => [
+                        'code' => ErrorCode::INVALID_REQUEST->value,
+                        'message' => ErrorCode::INVALID_REQUEST->interpret(),
+                    ],
+                    'id' => null,
+                ],
+            ],
+            $response->toArray()
+        );
+
+        $response = $server->process('[null]');
+
+        self::assertEquals(
+            [
+                [
+                    'jsonrpc' => Version::TWO->value,
+                    'error' => [
+                        'code' => ErrorCode::INVALID_REQUEST->value,
+                        'message' => ErrorCode::INVALID_REQUEST->interpret(),
+                    ],
+                    'id' => null,
+                ]
+            ],
+            $response->toArray()
+        );
+
+        $response = $server->process('[null, null, null]');
+
+        self::assertEquals(
+            [
+                [
+                    'jsonrpc' => Version::TWO->value,
+                    'error' => [
+                        'code' => ErrorCode::INVALID_REQUEST->value,
+                        'message' => ErrorCode::INVALID_REQUEST->interpret(),
+                    ],
+                    'id' => null,
+                ],
+                [
+                    'jsonrpc' => Version::TWO->value,
+                    'error' => [
+                        'code' => ErrorCode::INVALID_REQUEST->value,
+                        'message' => ErrorCode::INVALID_REQUEST->interpret(),
+                    ],
+                    'id' => null,
+                ],
+                [
+                    'jsonrpc' => Version::TWO->value,
+                    'error' => [
+                        'code' => ErrorCode::INVALID_REQUEST->value,
+                        'message' => ErrorCode::INVALID_REQUEST->interpret(),
+                    ],
+                    'id' => null,
+                ],
+            ],
+            $response->toArray()
+        );
+
+        $response = $server->process('[]');
+        self::assertEquals(
+            [
+                'jsonrpc' => Version::TWO->value,
+                'error' => [
+                    'code' => ErrorCode::INVALID_REQUEST->value,
+                    'message' => ErrorCode::INVALID_REQUEST->interpret(),
+                ],
+                'id' => null,
+            ],
+            $response->toArray()
+        );
+    }
+
+    public function testRequestHasJustNotificationsInBatch(): void
+    {
+        $server = RpcServer::new([
+            'users.call' => function (RpcRequest $request, ?RpcResponse $response = null): ?RpcResponse {
+                return $response?->addResult([30, 40]);
+            },
+            'users.notify' => function (RpcRequest $request, ?RpcResponse $response = null): ?RpcResponse {
+                return $response;
+            },
+        ]);
+
+        $response = $server->process(
+            '[{"jsonrpc": "2.0", "method": "users.call"}, {"jsonrpc": "2.0", "method": "users.notify"}]'
+        );
+        self::assertNull($response);
+    }
 }
 
 final class DenyNotAllowedMethods implements ValidateRequest
