@@ -1,9 +1,8 @@
 
-![test](https://github.com/operation-hardcode/php-rpc-server/workflows/test/badge.svg?event=push)
+![test](https://github.com/operation-hardcode/php-rpc-server/workflows/ci/badge.svg?event=push)
 [![Codecov](https://codecov.io/gh/operation-hardcode/php-rpc-server/branch/master/graph/badge.svg)](https://codecov.io/gh/operation-hardcode/php-rpc-server)
 [![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](LICENSE.md)
 [![Total Downloads](https://img.shields.io/packagist/dt/operation-hardcode/php-rpc-server.svg?style=flat-square)](https://packagist.org/packages/operation-hardcode/php-rpc-server)
-[![Quality Score](https://img.shields.io/scrutinizer/g/operation-hardcode/php-rpc-server.svg?style=flat-square)](https://scrutinizer-ci.com/g/operation-hardcode/php-rpc-server)
 
 # JSON RPC Server implementation for PHP.
 
